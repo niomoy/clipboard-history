@@ -22,8 +22,8 @@ class SettingsWindow(ctk.CTkToplevel):
     BG          = "#F5F7FA"
     TEXT_MAIN   = "#2C2C2E"
     TEXT_SUB    = "#8E8E93"
-    ACCENT      = "#007AFF"
-    ACCENT_HOV  = "#0056CC"
+    ACCENT      = "#9ACFFF"
+    ACCENT_HOV  = "#7AB8E8"
 
     def __init__(self, master, storage, on_save=None):
         super().__init__(master)

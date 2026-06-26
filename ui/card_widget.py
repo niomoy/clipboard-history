@@ -21,10 +21,10 @@ class ClipboardCard(ctk.CTkFrame):
 
     TEXT_MAIN       = "#2C2C2E"   # iOS 主文字
     TEXT_SECONDARY  = "#8E8E93"   # iOS 次要文字（时间戳）
-    ACCENT_BLUE     = "#007AFF"   # Apple Blue
-    ACCENT_BLUE_HOV = "#0056CC"   # 深蓝悬停
-    DANGER_RED      = "#FF3B30"   # Apple Red
-    DANGER_RED_HOV  = "#CC2C26"   # 深红悬停
+    ACCENT_BLUE     = "#9ACFFF"   # 柔和蓝
+    ACCENT_BLUE_HOV = "#7AB8E8"   # 深一点
+    DANGER_RED      = "#FF9C9A"   # 柔和红
+    DANGER_RED_HOV  = "#E88987"   # 深一点
 
     CORNER_RADIUS = 18
     BORDER_WIDTH  = 1
@@ -160,6 +160,7 @@ class ClipboardCard(ctk.CTkFrame):
             font=ctk.CTkFont(size=11),
             fg_color=self.ACCENT_BLUE if not is_pinned else self.TEXT_SECONDARY,
             hover_color=self.ACCENT_BLUE_HOV if not is_pinned else "#757578",
+            text_color="#1A1A2E",
             corner_radius=8,
             command=self._on_pin_click,
         )
@@ -174,6 +175,7 @@ class ClipboardCard(ctk.CTkFrame):
             font=ctk.CTkFont(size=11),
             fg_color=self.DANGER_RED,
             hover_color=self.DANGER_RED_HOV,
+            text_color="#1A1A2E",
             corner_radius=8,
             command=self._on_delete_click,
         )

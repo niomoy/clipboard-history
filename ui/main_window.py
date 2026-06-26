@@ -10,7 +10,6 @@ import win32clipboard
 from PIL import Image as PILImage
 
 from .card_widget import ClipboardCard
-from .glass_effect import apply_acrylic
 
 
 class MainWindow(ctk.CTk):
@@ -21,8 +20,8 @@ class MainWindow(ctk.CTk):
     MIN_WIDTH  = 380
     MIN_HEIGHT = 440
 
-    # 毛玻璃窗口底色
-    WINDOW_BG = "#F0F4F8"
+    # 窗口底色 — 柔和雾白，卡片悬浮其上模拟毛玻璃层次
+    WINDOW_BG = "#EAEEF2"
 
     def __init__(self, storage, on_open_settings=None):
         super().__init__()
@@ -31,7 +30,6 @@ class MainWindow(ctk.CTk):
         self.on_open_settings = on_open_settings
         self.cards = []
         self._monitor = None
-        self._acrylic_enabled = False
 
         # 窗口配置
         self.title("历史粘贴板")
@@ -44,22 +42,6 @@ class MainWindow(ctk.CTk):
 
         self._build_toolbar()
         self._build_card_area()
-
-        # 延迟启用 Acrylic（等窗口完全创建后再调用）
-        self.after(100, self._enable_acrylic)
-
-    # ──────────────────────────────────────────────────────────────
-    #  Acrylic 模糊
-    # ──────────────────────────────────────────────────────────────
-
-    def _enable_acrylic(self):
-        """启用 Windows 原生毛玻璃模糊"""
-        try:
-            # 微调窗口透明度让 Acrylic 能透出来
-            self.attributes("-alpha", 0.99)
-            self._acrylic_enabled = apply_acrylic(self)
-        except Exception:
-            self._acrylic_enabled = False
 
     # ──────────────────────────────────────────────────────────────
     #  工具栏
@@ -88,6 +70,8 @@ class MainWindow(ctk.CTk):
             placeholder_text_color="#8E8E93",
         )
         self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+        # 双保险：trace + 按键事件
+        self.search_entry.bind("<KeyRelease>", lambda e: self._on_search())
 
         # 设置按钮
         settings_btn = ctk.CTkButton(
