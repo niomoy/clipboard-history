@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-主窗口 — 搜索栏 + 卡片列表滚动区
+主窗口 — 毛玻璃质感：Windows Acrylic 模糊背景 + 悬浮卡片
 """
 
 import os
@@ -10,46 +10,68 @@ import win32clipboard
 from PIL import Image as PILImage
 
 from .card_widget import ClipboardCard
+from .glass_effect import apply_acrylic
 
 
 class MainWindow(ctk.CTk):
-    """剪贴板历史主窗口"""
+    """剪贴板历史主窗口（毛玻璃款）"""
 
-    WIDTH = 420
-    HEIGHT = 600
-    MIN_WIDTH = 360
-    MIN_HEIGHT = 400
+    WIDTH  = 440
+    HEIGHT = 640
+    MIN_WIDTH  = 380
+    MIN_HEIGHT = 440
+
+    # 毛玻璃窗口底色
+    WINDOW_BG = "#F0F4F8"
 
     def __init__(self, storage, on_open_settings=None):
         super().__init__()
 
         self.storage = storage
         self.on_open_settings = on_open_settings
-        self.cards = []  # 当前显示的卡片组件列表
-        self._monitor = None  # 剪贴板监听器引用（由 main.py 设置）
+        self.cards = []
+        self._monitor = None
+        self._acrylic_enabled = False
 
         # 窗口配置
         self.title("历史粘贴板")
         self.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         self.minsize(self.MIN_WIDTH, self.MIN_HEIGHT)
+        self.configure(fg_color=self.WINDOW_BG)
 
-        # 设置关闭行为：隐藏而非退出
+        # 关闭 → 隐藏到托盘
         self.protocol("WM_DELETE_WINDOW", self.hide_window)
 
         self._build_toolbar()
         self._build_card_area()
 
-    # ------------------------------------------------------------------
-    # 工具栏
-    # ------------------------------------------------------------------
+        # 延迟启用 Acrylic（等窗口完全创建后再调用）
+        self.after(100, self._enable_acrylic)
+
+    # ──────────────────────────────────────────────────────────────
+    #  Acrylic 模糊
+    # ──────────────────────────────────────────────────────────────
+
+    def _enable_acrylic(self):
+        """启用 Windows 原生毛玻璃模糊"""
+        try:
+            # 微调窗口透明度让 Acrylic 能透出来
+            self.attributes("-alpha", 0.99)
+            self._acrylic_enabled = apply_acrylic(self)
+        except Exception:
+            self._acrylic_enabled = False
+
+    # ──────────────────────────────────────────────────────────────
+    #  工具栏
+    # ──────────────────────────────────────────────────────────────
 
     def _build_toolbar(self):
         """顶部工具栏：搜索框 + 设置按钮"""
         toolbar = ctk.CTkFrame(self, fg_color="transparent", height=44)
-        toolbar.pack(fill="x", padx=10, pady=(10, 4))
+        toolbar.pack(fill="x", padx=12, pady=(12, 4))
         toolbar.pack_propagate(False)
 
-        # 搜索框
+        # 搜索框 — 白色半透感
         self.search_var = ctk.StringVar()
         self.search_var.trace_add("write", lambda *a: self._on_search())
 
@@ -57,56 +79,59 @@ class MainWindow(ctk.CTk):
             toolbar,
             placeholder_text="搜索历史内容...",
             textvariable=self.search_var,
-            font=ctk.CTkFont(size=13),
-            height=34,
-            border_color="#90CAF9",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=13),
+            height=36,
+            corner_radius=18,
+            border_color="#D1D5DB",
             fg_color="#FFFFFF",
+            text_color="#2C2C2E",
+            placeholder_text_color="#8E8E93",
         )
-        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 6))
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
         # 设置按钮
         settings_btn = ctk.CTkButton(
             toolbar,
             text="⚙",
-            width=36,
-            height=34,
-            font=ctk.CTkFont(size=16),
+            width=38,
+            height=36,
+            font=ctk.CTkFont(size=18),
             fg_color="transparent",
-            hover_color="#E3F2FD",
-            text_color="#42A5F5",
+            hover_color="#E5E7EB",
+            text_color="#8E8E93",
+            corner_radius=18,
             command=self._on_settings,
         )
         settings_btn.pack(side="right")
 
-    # ------------------------------------------------------------------
-    # 卡片区域
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────
+    #  卡片区域
+    # ──────────────────────────────────────────────────────────────
 
     def _build_card_area(self):
-        """可滚动卡片列表"""
+        """可滚动的毛玻璃卡片列表"""
         self.card_scroll = ctk.CTkScrollableFrame(
             self,
             fg_color="transparent",
-            scrollbar_button_color="#BBDEFB",
-            scrollbar_button_hover_color="#90CAF9",
+            scrollbar_button_color="#CCD0D5",
+            scrollbar_button_hover_color="#A0A5AA",
         )
-        self.card_scroll.pack(fill="both", expand=True, padx=10, pady=(4, 10))
+        self.card_scroll.pack(fill="both", expand=True, padx=12, pady=(4, 12))
 
         # 空状态提示
         self.empty_label = ctk.CTkLabel(
             self.card_scroll,
             text="暂无剪贴板历史\n\n复制一段文字或截图试试吧 ✨",
-            font=ctk.CTkFont(size=14),
-            text_color="#888888",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=14),
+            text_color="#8E8E93",
         )
 
-    # ------------------------------------------------------------------
-    # 数据刷新
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────
+    #  数据刷新
+    # ──────────────────────────────────────────────────────────────
 
     def refresh(self):
-        """刷新卡片列表（从数据库重新加载）"""
-        # 清除旧卡片
+        """从数据库重新加载卡片列表"""
         for card in self.cards:
             card.destroy()
         self.cards.clear()
@@ -115,7 +140,7 @@ class MainWindow(ctk.CTk):
         records = self.storage.get_records(search=search)
 
         if not records:
-            self.empty_label.pack(pady=60)
+            self.empty_label.pack(pady=80)
         else:
             self.empty_label.pack_forget()
 
@@ -127,33 +152,29 @@ class MainWindow(ctk.CTk):
                 on_pin=self._do_pin,
                 on_delete=self._do_delete,
             )
-            card.pack(fill="x", pady=(0, 8))
+            card.pack(fill="x", pady=(0, 10))
             self.cards.append(card)
 
     def set_monitor(self, monitor):
-        """绑定剪贴板监听器，有新记录时自动刷新"""
         self._monitor = monitor
         monitor.on_new_record = self._on_new_record_from_monitor
 
     def _on_new_record_from_monitor(self, record):
-        """监听器回调：在主线程刷新 UI"""
         self.after(100, self.refresh)
 
-    # ------------------------------------------------------------------
-    # 用户操作
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────
+    #  用户操作
+    # ──────────────────────────────────────────────────────────────
 
     def _on_search(self):
-        """搜索框内容变化"""
         self.refresh()
 
     def _on_settings(self):
-        """打开设置"""
         if self.on_open_settings:
             self.on_open_settings()
 
     def _do_copy(self, record):
-        """复制记录到剪贴板"""
+        """复制内容到剪贴板"""
         try:
             win32clipboard.OpenClipboard()
             win32clipboard.EmptyClipboard()
@@ -164,10 +185,9 @@ class MainWindow(ctk.CTk):
                     img_path = record.get("image_path", "")
                     if img_path and os.path.exists(img_path):
                         img = PILImage.open(img_path)
-                        # 转换为 BMP 写入剪贴板
                         output = io.BytesIO()
                         img.convert("RGB").save(output, format="BMP")
-                        data = output.getvalue()[14:]  # 去掉 BMP 文件头
+                        data = output.getvalue()[14:]
                         win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
             finally:
                 win32clipboard.CloseClipboard()
@@ -175,28 +195,24 @@ class MainWindow(ctk.CTk):
             pass
 
     def _do_pin(self, record):
-        """切换置顶"""
         new_state = self.storage.toggle_pin(record["id"])
         if new_state is not None:
             record["pinned"] = new_state
             self.refresh()
 
     def _do_delete(self, record):
-        """删除记录"""
         self.storage.delete_record(record["id"])
         self.refresh()
 
-    # ------------------------------------------------------------------
-    # 窗口显隐
-    # ------------------------------------------------------------------
+    # ──────────────────────────────────────────────────────────────
+    #  窗口显隐
+    # ──────────────────────────────────────────────────────────────
 
     def show_window(self):
-        """显示并提到最前"""
         self.deiconify()
         self.lift()
         self.focus_force()
         self.refresh()
 
     def hide_window(self):
-        """隐藏窗口（缩回托盘）"""
         self.withdraw()

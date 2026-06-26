@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-设置窗口 — 保留天数、开机自启配置
+设置窗口 — 保留天数、开机自启（毛玻璃配色）
 """
 
 import customtkinter as ctk
@@ -15,8 +15,15 @@ except ImportError:
 class SettingsWindow(ctk.CTkToplevel):
     """设置弹窗"""
 
-    WIDTH = 340
+    WIDTH  = 340
     HEIGHT = 240
+
+    # 毛玻璃配色
+    BG          = "#F5F7FA"
+    TEXT_MAIN   = "#2C2C2E"
+    TEXT_SUB    = "#8E8E93"
+    ACCENT      = "#007AFF"
+    ACCENT_HOV  = "#0056CC"
 
     def __init__(self, master, storage, on_save=None):
         super().__init__(master)
@@ -27,17 +34,13 @@ class SettingsWindow(ctk.CTkToplevel):
         self.title("设置")
         self.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         self.resizable(False, False)
+        self.configure(fg_color=self.BG)
 
-        # 模态行为
         self.transient(master)
         self.grab_set()
 
         self._build()
         self._load_settings()
-
-    # ------------------------------------------------------------------
-    # UI 构建
-    # ------------------------------------------------------------------
 
     def _build(self):
         """构建设置界面"""
@@ -45,20 +48,20 @@ class SettingsWindow(ctk.CTkToplevel):
         title = ctk.CTkLabel(
             self,
             text="设置",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#333333",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=18, weight="bold"),
+            text_color=self.TEXT_MAIN,
         )
-        title.pack(pady=(20, 16))
+        title.pack(pady=(24, 18))
 
-        # 保留天数
+        # ── 保留天数 ──
         retention_frame = ctk.CTkFrame(self, fg_color="transparent")
-        retention_frame.pack(fill="x", padx=24, pady=(0, 12))
+        retention_frame.pack(fill="x", padx=28, pady=(0, 8))
 
         retention_label = ctk.CTkLabel(
             retention_frame,
             text="保留天数",
-            font=ctk.CTkFont(size=14),
-            text_color="#333333",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=14),
+            text_color=self.TEXT_MAIN,
         )
         retention_label.pack(side="left")
 
@@ -69,30 +72,30 @@ class SettingsWindow(ctk.CTkToplevel):
             variable=self.retention_var,
             width=80,
             font=ctk.CTkFont(size=13),
-            fg_color="#42A5F5",
-            button_color="#42A5F5",
-            button_hover_color="#1E88E5",
+            fg_color=self.ACCENT,
+            button_color=self.ACCENT,
+            button_hover_color=self.ACCENT_HOV,
+            corner_radius=8,
         )
         retention_menu.pack(side="right")
 
-        # 天数说明
         day_hint = ctk.CTkLabel(
             self,
             text="超过保留天数的普通记录将自动清理",
             font=ctk.CTkFont(size=11),
-            text_color="#888888",
+            text_color=self.TEXT_SUB,
         )
-        day_hint.pack(padx=24, anchor="w", pady=(0, 16))
+        day_hint.pack(padx=28, anchor="w", pady=(0, 18))
 
-        # 开机自启
+        # ── 开机自启 ──
         auto_frame = ctk.CTkFrame(self, fg_color="transparent")
-        auto_frame.pack(fill="x", padx=24, pady=(0, 6))
+        auto_frame.pack(fill="x", padx=28, pady=(0, 6))
 
         auto_label = ctk.CTkLabel(
             auto_frame,
             text="开机自启",
-            font=ctk.CTkFont(size=14),
-            text_color="#333333",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=14),
+            text_color=self.TEXT_MAIN,
         )
         auto_label.pack(side="left")
 
@@ -101,24 +104,25 @@ class SettingsWindow(ctk.CTkToplevel):
             auto_frame,
             variable=self.auto_var,
             text="",
-            progress_color="#42A5F5",
+            progress_color=self.ACCENT,
             width=44,
         )
         auto_switch.pack(side="right")
 
-        # 按钮
+        # ── 按钮 ──
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
-        btn_frame.pack(fill="x", padx=24, pady=(16, 12))
+        btn_frame.pack(fill="x", padx=28, pady=(18, 16))
 
         cancel_btn = ctk.CTkButton(
             btn_frame,
             text="取消",
             width=80,
             height=32,
-            font=ctk.CTkFont(size=13),
+            font=ctk.CTkFont(family="Microsoft YaHei", size=13),
             fg_color="transparent",
-            text_color="#888888",
-            hover_color="#E3F2FD",
+            text_color=self.TEXT_SUB,
+            hover_color="#E5E7EB",
+            corner_radius=8,
             command=self.destroy,
         )
         cancel_btn.pack(side="left")
@@ -128,37 +132,29 @@ class SettingsWindow(ctk.CTkToplevel):
             text="保存",
             width=80,
             height=32,
-            font=ctk.CTkFont(size=13),
-            fg_color="#42A5F5",
-            hover_color="#1E88E5",
+            font=ctk.CTkFont(family="Microsoft YaHei", size=13),
+            fg_color=self.ACCENT,
+            hover_color=self.ACCENT_HOV,
+            corner_radius=8,
             command=self._on_save,
         )
         save_btn.pack(side="right")
 
-    # ------------------------------------------------------------------
-    # 数据加载与保存
-    # ------------------------------------------------------------------
-
     def _load_settings(self):
-        """从 storage 加载当前设置"""
         retention = self.storage.get_setting("retention_days", "3")
         self.retention_var.set(retention)
-
         auto_start = self.storage.get_setting("auto_start", "1")
         self.auto_var.set(auto_start == "1")
 
     def _on_save(self):
-        """保存设置"""
         self.storage.set_setting("retention_days", self.retention_var.get())
         self.storage.set_setting("auto_start", "1" if self.auto_var.get() else "0")
 
-        # 实际启用/禁用开机自启
         if self.auto_var.get():
             enable_auto_start()
         else:
             disable_auto_start()
 
-        # 立即执行一次过期清理
         self.storage.cleanup_expired()
 
         if self.on_save:
