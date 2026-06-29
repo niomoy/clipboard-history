@@ -93,6 +93,7 @@ class ClipboardCard(ctk.CTkFrame):
             anchor="w",
         )
         self.content_label.pack(fill="x", padx=16, pady=(10, 6))
+        self.content_label.bind("<Button-1>", self._on_copy_click)
 
     def _build_image_body(self):
         thumb_path = self.record.get("thumbnail", "")
@@ -100,6 +101,7 @@ class ClipboardCard(ctk.CTkFrame):
 
         body_frame = ctk.CTkFrame(self, fg_color="transparent")
         body_frame.pack(fill="x", padx=16, pady=(10, 6))
+        body_frame.bind("<Button-1>", self._on_copy_click)
 
         thumb_shown = False
         for path in (thumb_path, img_path):
